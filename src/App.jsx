@@ -1,0 +1,107 @@
+import { useState } from "react";
+import Navbar from "./Components/Navbar";
+import Hero from "./Components/Hero";
+import MoviesListBox from "./Components/MoviesListBox";
+import ListBox from "./Components/ListBox";
+import MovieSummary from "./Components/MovieSummary";
+import WatchedListBox from "./Components/WatchedListBox";
+import { useEffect } from "react";
+import Loader from "./Components/Loader";
+import ErrorMsg from "./Components/ErrorMsg";
+import SelectedMovie from "./Components/SelectedMovie";
+
+export default function App() {
+  const [query, setQuery] = useState("");
+  const [movies, setMovies] = useState([]);
+  const [watched, setWatched] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [errormsg, setErrormsg] = useState("");
+  const [selectedID, setSelectedID] = useState(null);
+  function handleSelectMovie(id) {
+    setSelectedID((selectedID) => (id === selectedID ? null : id));
+  }
+
+  function handleCloseMovie() {
+    setSelectedID(null);
+  }
+  function handleAddWatched(movie) {
+    setWatched((watched) => [...watched, movie]);
+  }
+
+  function handleDeleteWatched(id) {
+    setWatched((watched) => watched.filter((movie) => movie.imdbID !== id));
+  }
+
+  const key = "822584fc";
+  useEffect(() => {
+    const controller = new AbortController();
+    async function fetchMovie() {
+      try {
+        setIsLoading(true);
+        setErrormsg("");
+        const res = await fetch(
+          `http://www.omdba pi.com/?apikey=${key}&s=${query}`,
+          { signal: controller.signal }
+        );
+        if (!res.ok) throw new Error("Something went wrong");
+
+        const data = await res.json();
+        if (data.Response === "false") {
+          throw new Error("Movies not found");
+        }
+        setMovies(data.Search);
+        setIsLoading(false);
+      } catch (e) {
+        console.log(e.message);
+        if (e.name !== "AbortError") {
+          setErrormsg(e.message);
+        }
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    if (query.length > 3) {
+      setErrormsg("");
+      setMovies([]);
+      return;
+    }
+    fetchMovie();
+
+    return function () {
+      controller.abort();
+    };
+  }, [query]);
+
+  return (
+    <>
+      <Navbar query={query} setQuery={setQuery} />
+      <Hero>
+        <ListBox>
+          {errormsg && <ErrorMsg error={errormsg} />}
+          {!isLoading && !errormsg && (
+            <MoviesListBox movies={movies} onMovieSelect={handleSelectMovie} />
+          )}
+          {isLoading && <Loader />}
+        </ListBox>
+        <ListBox>
+          {selectedID ? (
+            <SelectedMovie
+              selectedID={selectedID}
+              onCloseMovie={handleCloseMovie}
+              handleAddWatched={handleAddWatched}
+              watched={watched}
+            />
+          ) : (
+            <>
+              <MovieSummary watched={watched} />
+              <WatchedListBox
+                watched={watched}
+                onDeleteWatched={handleDeleteWatched}
+              />
+            </>
+          )}
+        </ListBox>
+      </Hero>
+    </>
+  );
+}
