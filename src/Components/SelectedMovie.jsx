@@ -38,7 +38,6 @@ const SelectedMovie = ({
     handleAddWatched(newWatchedMovie);
     onCloseMovie();
   }
-
   console.log(selectedID);
   useEffect(() => {
     async function getMovieDetails() {
@@ -54,6 +53,7 @@ const SelectedMovie = ({
     }
     getMovieDetails();
   }, [selectedID]);
+
   useEffect(() => {
     if (!title) return;
     document.title = `Movie | ${title}`;
@@ -61,6 +61,7 @@ const SelectedMovie = ({
       document.title = "usePopcorn";
     };
   }, [title]);
+
   useEffect(() => {
     function callback(e) {
       if (e.code === "Escape") {

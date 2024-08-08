@@ -13,7 +13,10 @@ import SelectedMovie from "./Components/SelectedMovie";
 export default function App() {
   const [query, setQuery] = useState("");
   const [movies, setMovies] = useState([]);
-  const [watched, setWatched] = useState([]);
+  const [watched, setWatched] = useState(function () {
+    const storedValue = localStorage.getItem("watched");
+    return JSON.parse(storedValue);
+  });
   const [isLoading, setIsLoading] = useState(false);
   const [errormsg, setErrormsg] = useState("");
   const [selectedID, setSelectedID] = useState(null);
@@ -32,6 +35,10 @@ export default function App() {
     setWatched((watched) => watched.filter((movie) => movie.imdbID !== id));
   }
 
+  useEffect(() => {
+    localStorage.setItem("watched", JSON.stringify(watched));
+  }, [watched]);
+
   const key = "822584fc";
   useEffect(() => {
     const controller = new AbortController();
@@ -43,7 +50,9 @@ export default function App() {
           `http://www.omdba pi.com/?apikey=${key}&s=${query}`,
           { signal: controller.signal }
         );
-        if (!res.ok) throw new Error("Something went wrong");
+        if (!res.ok) {
+          throw new Error("Something went wrong");
+        }
 
         const data = await res.json();
         if (data.Response === "false") {
@@ -51,6 +60,7 @@ export default function App() {
         }
         setMovies(data.Search);
         setIsLoading(false);
+        setErrormsg("");
       } catch (e) {
         console.log(e.message);
         if (e.name !== "AbortError") {
@@ -65,6 +75,7 @@ export default function App() {
       setMovies([]);
       return;
     }
+    handleCloseMovie();
     fetchMovie();
 
     return function () {
